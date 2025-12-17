@@ -137,9 +137,7 @@ class HairpinClassifier:
         for win_start, wseq in windows:
             struct, mfe = run_rnafold(wseq)
             
-            # Tier-2 geometry as SOFT gate: do not drop candidates
-            #tier2_geom_pass = 1.0 if tier2_geometry_filter(hp, self.geom_cfg) else 0.0
-            
+
             # Find Hairpins
             hairpins = find_hairpins(wseq, struct)
             if not hairpins:

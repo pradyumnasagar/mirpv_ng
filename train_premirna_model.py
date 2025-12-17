@@ -30,10 +30,10 @@ def load_and_featurize(
     records = read_fasta(fasta_path)
     print(f"[train] {fasta_path}: {len(records)} sequences (label={label})")
     df = compute_features_for_sequences(
-    records,
-    feature_set=feature_set,
-    rnafold_bin=rnafold_bin,
-    tier2_enabled=tier2_enabled,
+        records,
+        feature_set=feature_set,
+        rnafold_bin=rnafold_bin,
+        tier2_enabled=tier2_enabled,
     )
     df["label"] = label
     return df
