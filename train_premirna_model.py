@@ -25,12 +25,15 @@ from mirpv_ng.features import read_fasta, compute_features_for_sequences
 
 
 def load_and_featurize(
-    fasta_path: str, label: int, feature_set: str, rnafold_bin: str
+    fasta_path: str, label: int, feature_set: str, rnafold_bin: str, tier2_enabled: bool
 ) -> pd.DataFrame:
     records = read_fasta(fasta_path)
     print(f"[train] {fasta_path}: {len(records)} sequences (label={label})")
     df = compute_features_for_sequences(
-        records, feature_set=feature_set, rnafold_bin=rnafold_bin
+    records,
+    feature_set=feature_set,
+    rnafold_bin=rnafold_bin,
+    tier2_enabled=tier2_enabled,
     )
     df["label"] = label
     return df
@@ -54,12 +57,14 @@ def main():
     parser.add_argument("--rnafold-bin", default="RNAfold")
     parser.add_argument("--test-size", type=float, default=0.2)
     parser.add_argument("--n-estimators", type=int, default=500)
+    parser.add_argument("--tier2", action="store_true", help="Enable Tier-2 soft-gated features during training")
     parser.add_argument("--cv-folds", type=int, default=5)
     args = parser.parse_args()
 
     # 1. Load Data
-    df_pos = load_and_featurize(args.pos_fasta, 1, args.feature_set, args.rnafold_bin)
-    df_neg = load_and_featurize(args.neg_fasta, 0, args.feature_set, args.rnafold_bin)
+    df_pos = load_and_featurize(args.pos_fasta, 1, args.feature_set, args.rnafold_bin, args.tier2)
+    df_neg = load_and_featurize(args.neg_fasta, 0, args.feature_set, args.rnafold_bin, args.tier2)
+
 
     # Combine
     df = pd.concat([df_pos, df_neg], ignore_index=True)

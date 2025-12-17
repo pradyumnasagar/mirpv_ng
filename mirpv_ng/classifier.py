@@ -79,6 +79,7 @@ class HairpinClassifier:
         step: int = 20,
         tier1_min_pairs: int = 18,
         tier1_min_mfe: float = -15.0,
+        tier2_enabled: bool = False,
     ):
         self.species = species
         self.max_hairpin_len = max_hairpin_len
@@ -91,7 +92,11 @@ class HairpinClassifier:
             min_mfe=tier1_min_mfe, max_unpaired_frac=0.8
         )
         
+        # Tier 2 soft
+        self.tier2_enabled = tier2_enabled
+
         # Tier 2 Filters: Disabled by default (all None)
+        
         self.geom_cfg = GeometryConfig(
             max_num_loops=None, 
             max_loop_size=None,
@@ -116,7 +121,7 @@ class HairpinClassifier:
 
     def score_hairpin(self, seq_id: str, seq: str) -> Dict:
         """Score a short sequence directly (Bypasses Tier 2 Filters)."""
-        feats = compute_feature_vector(seq, feature_set=self.feature_set)
+        feats = compute_feature_vector(seq, feature_set=self.feature_set, tier2_enabled=self.tier2_enabled)
         x = self._vector_from_features(feats)
         proba = self.model_info.model.predict_proba(x)[0, 1]
         return {
@@ -133,7 +138,7 @@ class HairpinClassifier:
             struct, mfe = run_rnafold(wseq)
             
             # Tier-2 geometry as SOFT gate: do not drop candidates
-            tier2_geom_pass = 1.0 if tier2_geometry_filter(hp, self.geom_cfg) else 0.0
+            #tier2_geom_pass = 1.0 if tier2_geometry_filter(hp, self.geom_cfg) else 0.0
             
             # Find Hairpins
             hairpins = find_hairpins(wseq, struct)
@@ -151,7 +156,7 @@ class HairpinClassifier:
                 feats = compute_feature_vector(
                     hp_seq,
                     feature_set=self.feature_set,
-                    tier2_enabled=True,   # enables tier2_* features in extended_features
+                    tier2_enabled=self.tier2_enabled,   # enables tier2_* features in extended_features
                 )
                 feats["tier2_geom_pass"] = tier2_geom_pass
 

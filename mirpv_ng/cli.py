@@ -39,6 +39,7 @@ def cmd_score_fasta(args: argparse.Namespace) -> int:
         step=args.step,
         tier1_min_pairs=args.tier1_min_pairs,
         tier1_min_mfe=args.tier1_min_mfe,
+        tier2_enabled=args.tier2,
     )
 
     records = read_fasta(str(fasta_path))
@@ -131,6 +132,12 @@ def build_parser() -> argparse.ArgumentParser:
         "score-fasta",
         help="Score sequences from a FASTA file (sequence-only mode).",
     )
+    sp.add_argument(
+        "--tier2", 
+        action="store_true", 
+        help="Enable Tier-2 soft-gated features during scoring"
+    )
+
     sp.add_argument(
         "--fasta",
         required=True,
