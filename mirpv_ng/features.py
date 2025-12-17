@@ -15,6 +15,7 @@ from .geom_energy import energy_features_global
 from .geom_bulges import compute_bulge_features
 from .pgs_features import compute_pgs_features
 
+from .tier_filters import Tier2Config, tier2_soft_features
 
 # ----------------- RNAfold wrapper ----------------- #
 
@@ -95,7 +96,7 @@ def core36_features(seq: str, struct: str, mfe: float) -> Dict[str, float]:
 
 # ----------------- extended feature set ----------------- #
 
-def extended_features(seq: str, struct: str, mfe: float) -> Dict[str, float]:
+def extended_features(seq: str, struct: str, mfe: float, tier2_cfg: Tier2Config = Tier2Config(enabled=False)) -> Dict[str, float]:
     """
     Extended feature set: core + miRNAFold-like + PGS.
     """
@@ -155,6 +156,10 @@ def extended_features(seq: str, struct: str, mfe: float) -> Dict[str, float]:
 
     # PGS features
     feats.update(compute_pgs_features(seq_u, struct))
+    
+    # Tier-2 soft gating (added features; not filters)
+    feats.update(tier2_soft_features(seq_u, struct, mfe, tier2_cfg))
+
 
     return feats
 
@@ -279,16 +284,21 @@ def segment_gc_and_pairing(
 
 def compute_features_for_sequences(
     records: List[Tuple[str, str]],
-    feature_set: str = "core36",
+    feature_set: str = "extended",
     rnafold_bin: str = "RNAfold",
+    tier2_enabled: bool = False
 ) -> pd.DataFrame:
     rows: List[Dict[str, object]] = []
     for rid, seq in records:
         struct, mfe = run_rnafold(seq, rnafold_bin=rnafold_bin)
         if feature_set == "core36":
             feats = core36_features(seq, struct, mfe)
+        elif feature_set == "extended":
+            tier2_cfg = Tier2Config(enabled=tier2_enabled)
+            feats = extended_features(seq, struct, mfe, tier2_cfg=tier2_cfg)
         else:
-            feats = extended_features(seq, struct, mfe)
+            raise ValueError(f"Unknown feature_set: {feature_set}")
+
         row: Dict[str, object] = {"id": rid, "seq": seq, "struct": struct, "mfe": mfe}
         row.update(feats)
         rows.append(row)
@@ -302,7 +312,7 @@ def main() -> None:
         description="Compute hairpin features from FASTA using RNAfold."
     )
     ap.add_argument("--fasta", required=True)
-    ap.add_argument("--feature-set", choices=["core36", "extended"], default="core36")
+    ap.add_argument("--feature-set", choices=["core36", "extended"], default="extended")
     ap.add_argument("--rnafold-bin", default="RNAfold")
     ap.add_argument("--out-csv", required=True)
     args = ap.parse_args()
