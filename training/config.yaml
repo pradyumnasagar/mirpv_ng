@@ -1,0 +1,11 @@
+species:
+  hsa:
+    pos_fasta: "data/hsa_mirgene_premirna.fa"
+    neg_fasta: "data/hsa_neg_hairpins.fa"
+  mmu:
+    pos_fasta: "data/mmu_mirgene_premirna.fa"
+    neg_fasta: "data/mmu_neg_hairpins.fa"
+
+general:
+  pos_fasta: "data/all_species_pos.fa"
+  neg_fasta: "data/all_species_neg.fa"
