@@ -137,15 +137,16 @@ class HairpinClassifier:
             
             # Find Hairpins
             hairpins = find_hairpins(wseq, struct)
-            if not hairpins: continue
-            
+            if not hairpins:
+                continue
+
             for hp in hairpins:
-                # Tier 2 Filter (Geometry)
-                if not tier2_geometry_filter(hp, self.geom_cfg):
-                    continue
-                
+                # Tier-2 geometry as SOFT gate: do not drop candidates
+                tier2_geom_pass = 1.0 if tier2_geometry_filter(hp, self.geom_cfg) else 0.0
+
                 # Extract and Score
                 hp_seq = wseq[hp.start:hp.end]
+
                 # Re-compute features on the cropped hairpin
                 feats = compute_feature_vector(
                     hp_seq,
@@ -153,12 +154,13 @@ class HairpinClassifier:
                     tier2_enabled=True,   # enables tier2_* features in extended_features
                 )
                 feats["tier2_geom_pass"] = tier2_geom_pass
+
                 # Use hairpin MFE if re-fold happened, otherwise fallback to window MFE (proxy)
-                if "mfe" not in feats: 
-                    feats["mfe"] = mfe 
+                if "mfe" not in feats:
+                    feats["mfe"] = mfe
 
                 proba = float(self.model_info.model.predict_proba(self._vector_from_features(feats))[0, 1])
-                
+
                 candidates.append({
                     "input_id": seq_id, "mode": "scan",
                     "start": win_start + hp.start, "end": win_start + hp.end,
