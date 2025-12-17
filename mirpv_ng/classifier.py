@@ -15,8 +15,9 @@ import joblib
 import numpy as np
 
 from .features import extended_features, core36_features, run_rnafold
-from .tier_filters import TierConfig, GeometryConfig, tier1_energy_filter, tier2_geometry_filter
+from .tier_filters import TierConfig, GeometryConfig, Tier2Config, tier1_energy_filter, tier2_geometry_filter
 from .geom_hairpin_finder import find_hairpins
+
 
 @dataclass
 class ModelInfo:
@@ -33,14 +34,22 @@ def load_rf_model(model_path: str | Path) -> ModelInfo:
         feature_cols=payload.get("feature_cols", [])
     )
 
-def compute_feature_vector(seq: str, feature_set: str = "extended", mfe: float = None, struct: str = None) -> Dict[str, float]:
+def compute_feature_vector(
+    seq: str,
+    feature_set: str = "extended",
+    mfe: float = None,
+    struct: str = None,
+    tier2_enabled: bool = False,
+) -> Dict[str, float]:
+    
     if struct is None or mfe is None:
         struct, mfe = run_rnafold(seq)
     
     if feature_set == "core36":
         feats = core36_features(seq, struct, mfe)
     else:
-        feats = extended_features(seq, struct, mfe)
+        tier2_cfg = Tier2Config(enabled=tier2_enabled)
+        feats = extended_features(seq, struct, mfe, tier2_cfg=tier2_cfg)
         
     if "mfe" not in feats: 
         feats["mfe"] = mfe
@@ -123,9 +132,8 @@ class HairpinClassifier:
         for win_start, wseq in windows:
             struct, mfe = run_rnafold(wseq)
             
-            # Tier 1 Filter (Energy/Pairs)
-            if not tier1_energy_filter(wseq, struct, mfe, self.tier_cfg):
-                continue
+            # Tier-2 geometry as SOFT gate: do not drop candidates
+            tier2_geom_pass = 1.0 if tier2_geometry_filter(hp, self.geom_cfg) else 0.0
             
             # Find Hairpins
             hairpins = find_hairpins(wseq, struct)
@@ -139,8 +147,12 @@ class HairpinClassifier:
                 # Extract and Score
                 hp_seq = wseq[hp.start:hp.end]
                 # Re-compute features on the cropped hairpin
-                feats = compute_feature_vector(hp_seq, feature_set=self.feature_set)
-                
+                feats = compute_feature_vector(
+                    hp_seq,
+                    feature_set=self.feature_set,
+                    tier2_enabled=True,   # enables tier2_* features in extended_features
+                )
+                feats["tier2_geom_pass"] = tier2_geom_pass
                 # Use hairpin MFE if re-fold happened, otherwise fallback to window MFE (proxy)
                 if "mfe" not in feats: 
                     feats["mfe"] = mfe 
