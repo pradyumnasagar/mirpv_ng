@@ -1,10 +1,11 @@
 # mirpv_ng/cli.py
-
 """
 Command-line interface for miRPV-NG.
 
-Currently provides:
+Provides:
 - score-fasta: score sequences in FASTA (sequence-only mode)
+- annotate-3d: optional AlphaFold3 RNA structure prediction
+- predict-mature: predict mature miRNA cut site on precursor sequences (XGBRanker)
 """
 
 import argparse
@@ -14,12 +15,10 @@ from pathlib import Path
 
 from .classifier import HairpinClassifier
 from .features import read_fasta  # same helper used in training
-
 from .structure3d_af3 import AF3Config, run_af3_for_rna
 
 
 def cmd_score_fasta(args: argparse.Namespace) -> int:
-    
     """
     Sequence-only mode scoring for a FASTA file.
     """
@@ -28,7 +27,6 @@ def cmd_score_fasta(args: argparse.Namespace) -> int:
         print(f"[score-fasta] ERROR: FASTA not found: {fasta_path}", file=sys.stderr)
         return 1
 
-    # Instantiate classifier
     clf = HairpinClassifier(
         model_path=args.model,
         species=args.species,
@@ -45,7 +43,6 @@ def cmd_score_fasta(args: argparse.Namespace) -> int:
     records = read_fasta(str(fasta_path))
     print(f"[score-fasta] Loaded {len(records)} sequences from {fasta_path}", file=sys.stderr)
 
-    # Prepare output
     out_path = Path(args.out_tsv) if args.out_tsv else Path("-")
     out_fh = sys.stdout if str(out_path) == "-" else open(out_path, "w", newline="")
 
@@ -77,6 +74,8 @@ def cmd_score_fasta(args: argparse.Namespace) -> int:
         file=sys.stderr,
     )
     return 0
+
+
 def cmd_annotate_3d(args: argparse.Namespace) -> int:
     """
     Optional: run AlphaFold3 on top-N precursors/hairpins.
@@ -86,13 +85,11 @@ def cmd_annotate_3d(args: argparse.Namespace) -> int:
         print(f"[annotate-3d] ERROR: FASTA not found: {fasta_path}", file=sys.stderr)
         return 1
 
-    # Load sequences
     records = read_fasta(str(fasta_path))
     if not records:
         print("[annotate-3d] ERROR: FASTA has no sequences.", file=sys.stderr)
         return 1
 
-    # Select top N in FASTA order
     selected = records[: args.top_n]
 
     out_dir = Path(args.out_dir)
@@ -123,137 +120,99 @@ def cmd_annotate_3d(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_predict_mature(args: argparse.Namespace) -> int:
+    from .mature_model import MatureRanker
+    from Bio import SeqIO
+
+    ranker = MatureRanker.load(args.mature_model)
+
+    fasta_path = Path(args.fasta)
+    if not fasta_path.exists():
+        print(f"[predict-mature] ERROR: FASTA not found: {fasta_path}", file=sys.stderr)
+        return 1
+
+    records = list(SeqIO.parse(str(fasta_path), "fasta"))
+    if not records:
+        print("[predict-mature] ERROR: FASTA has no sequences.", file=sys.stderr)
+        return 1
+
+    out_path = Path(args.out)
+    with open(out_path, "w") as out:
+        out.write("id\tarm\tstart\tend\tlength\tscore\tmature_seq\n")
+        for r in records:
+            pred = ranker.predict_top1(
+                str(r.seq),
+                rnafold_bin=args.rnafold_bin,
+                loop_buffer=args.loop_buffer,
+                fallback_loop_buffer=args.fallback_loop_buffer,
+            )
+            if pred is None:
+                out.write(f"{r.id}\tNA\tNA\tNA\tNA\tNA\tNA\n")
+            else:
+                out.write(
+                    f"{r.id}\t{pred['arm']}\t{pred['start']}\t{pred['end']}\t{pred['length']}\t{pred['score']:.6f}\t{pred['mature_seq']}\n"
+                )
+
+    print(f"[predict-mature] Wrote predictions to {out_path}", file=sys.stderr)
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="mirpv-ng", description="miRPV-NG CLI")
     sub = p.add_subparsers(dest="command", required=True)
 
-    # score-fasta subcommand
+    # -------------------------
+    # score-fasta
+    # -------------------------
     sp = sub.add_parser(
         "score-fasta",
         help="Score sequences from a FASTA file (sequence-only mode).",
     )
-    sp.add_argument(
-        "--tier2", 
-        action="store_true", 
-        help="Enable Tier-2 soft-gated features during scoring"
-    )
-
-    sp.add_argument(
-        "--fasta",
-        required=True,
-        help="Input FASTA of sequences (hairpins or longer regions).",
-    )
-    sp.add_argument(
-        "--model",
-        required=True,
-        help="Path to trained RF model (.pkl) from train_premirna_model.py",
-    )
-    sp.add_argument(
-        "--species",
-        default="hsa",
-        help="Species code (currently just informative).",
-    )
-    sp.add_argument(
-        "--feature-set",
-        choices=["core36", "extended"],
-        default="extended",
-        help="Feature set expected by the model.",
-    )
-    sp.add_argument(
-        "--max-hairpin-len",
-        type=int,
-        default=120,
-        help="Max length treated as a single hairpin.",
-    )
-    sp.add_argument(
-        "--max-seq-only-len",
-        type=int,
-        default=5000,
-        help="Max length allowed in sequence-only mode; above this is 'too_long'.",
-    )
-    sp.add_argument(
-        "--window-len",
-        type=int,
-        default=100,
-        help="Window length for scanning longer sequences.",
-    )
-    sp.add_argument(
-        "--step",
-        type=int,
-        default=20,
-        help="Step size for sliding window in scanning mode.",
-    )
-    sp.add_argument(
-        "--tier1-min-pairs",
-        type=int,
-        default=18,
-        help="Tier-1 filter: minimum number of base pairs in window.",
-    )
-    sp.add_argument(
-        "--tier1-min-mfe",
-        type=float,
-        default=-15.0,
-        help="Tier-1 filter: maximum allowed MFE (e.g., -15.0 kcal/mol).",
-    )
-    sp.add_argument(
-        "--out-tsv",
-        default="-",
-        help="Output TSV file (default: stdout).",
-    )
+    sp.add_argument("--tier2", action="store_true", help="Enable Tier-2 soft-gated features during scoring")
+    sp.add_argument("--fasta", required=True, help="Input FASTA of sequences (hairpins or longer regions).")
+    sp.add_argument("--model", required=True, help="Path to trained RF model (.pkl) from train_premirna_model.py")
+    sp.add_argument("--species", default="hsa", help="Species code (currently just informative).")
+    sp.add_argument("--feature-set", choices=["core36", "extended"], default="extended", help="Feature set expected by the model.")
+    sp.add_argument("--max-hairpin-len", type=int, default=120, help="Max length treated as a single hairpin.")
+    sp.add_argument("--max-seq-only-len", type=int, default=5000, help="Max length allowed in sequence-only mode; above this is 'too_long'.")
+    sp.add_argument("--window-len", type=int, default=100, help="Window length for scanning longer sequences.")
+    sp.add_argument("--step", type=int, default=20, help="Step size for sliding window in scanning mode.")
+    sp.add_argument("--tier1-min-pairs", type=int, default=18, help="Tier-1 filter: minimum number of base pairs in window.")
+    sp.add_argument("--tier1-min-mfe", type=float, default=-15.0, help="Tier-1 filter: maximum allowed MFE (e.g., -15.0 kcal/mol).")
+    sp.add_argument("--out-tsv", default="-", help="Output TSV file (default: stdout).")
     sp.set_defaults(func=cmd_score_fasta)
-        # ---------------------------------------------------------------------
-    # annotate-3d subcommand (optional AlphaFold3-RNA integration)
-    # ---------------------------------------------------------------------
+
+    # -------------------------
+    # annotate-3d (AF3 optional)
+    # -------------------------
     sp3 = sub.add_parser(
         "annotate-3d",
         help="Run AlphaFold3 on top-N candidate sequences to produce RNA 3D structures (optional).",
     )
-
-    sp3.add_argument(
-        "--fasta",
-        required=True,
-        help="FASTA file containing precursor/hairpin sequences for 3D modelling.",
-    )
-    sp3.add_argument(
-        "--out-dir",
-        required=True,
-        help="Output directory where AF3 PDB files will be written.",
-    )
-    sp3.add_argument(
-        "--docker-image",
-        required=True,
-        help="Name of the AlphaFold3 Docker image to use.",
-    )
-    sp3.add_argument(
-        "--model-dir",
-        required=True,
-        help="Host path to AlphaFold3 model directory.",
-    )
-    sp3.add_argument(
-        "--db-dir",
-        required=True,
-        help="Host path to AlphaFold3 database directory.",
-    )
-    sp3.add_argument(
-        "--top-n",
-        type=int,
-        default=20,
-        help="Maximum number of sequences to process (default: 20).",
-    )
-    sp3.add_argument(
-        "--max-len",
-        type=int,
-        default=120,
-        help="Maximum RNA length allowed for AF3 modelling (default: 120).",
-    )
-    sp3.add_argument(
-        "--dry-run",
-        action="store_true",
-        help="Print the AF3 docker command but do NOT run it.",
-    )
-
+    sp3.add_argument("--fasta", required=True, help="FASTA file containing precursor/hairpin sequences for 3D modelling.")
+    sp3.add_argument("--out-dir", required=True, help="Output directory where AF3 PDB files will be written.")
+    sp3.add_argument("--docker-image", required=True, help="Name of the AlphaFold3 Docker image to use.")
+    sp3.add_argument("--model-dir", required=True, help="Host path to AlphaFold3 model directory.")
+    sp3.add_argument("--db-dir", required=True, help="Host path to AlphaFold3 database directory.")
+    sp3.add_argument("--top-n", type=int, default=20, help="Maximum number of sequences to process (default: 20).")
+    sp3.add_argument("--max-len", type=int, default=120, help="Maximum RNA length allowed for AF3 modelling (default: 120).")
+    sp3.add_argument("--dry-run", action="store_true", help="Print the AF3 docker command but do NOT run it.")
     sp3.set_defaults(func=cmd_annotate_3d)
 
+    # -------------------------
+    # predict-mature
+    # -------------------------
+    spm = sub.add_parser(
+        "predict-mature",
+        help="Predict mature miRNA position on precursor FASTA using XGBRanker.",
+    )
+    spm.add_argument("--mature-model", required=True, help="Pickle produced by train_mature_ranker.py")
+    spm.add_argument("--fasta", required=True, help="Precursor FASTA (hairpin sequences).")
+    spm.add_argument("--out", required=True, help="Output TSV file.")
+    spm.add_argument("--rnafold-bin", default="RNAfold")
+    spm.add_argument("--loop-buffer", type=int, default=0)
+    spm.add_argument("--fallback-loop-buffer", type=int, default=10)
+    spm.set_defaults(func=cmd_predict_mature)
 
     return p
 
