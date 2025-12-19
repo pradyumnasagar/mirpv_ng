@@ -1,0 +1,112 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+.env
+.mypy_cache/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# --- OS / editors ---
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# --- Logs ---
+*.log
+logs/
+run.log
+
+# --- Outputs / run artifacts ---
+results/
+work/
+tmp/
+*.tmp
+*.temp
+
+# --- Large references / indexes ---
+refs/
+references/
+index/
+indexes/
+*.ebwt
+*.ebwtl
+*.bt2
+*.bt2l
+*.bwt
+*.pac
+*.ann
+*.amb
+*.sa
+*.fai
+*.gzi
+*.csi
+*.tbi
+
+# --- Genomes / fastq / bam ---
+*.fa
+*.fasta
+*.fna
+*.fastq
+*.fq
+*.fastq.gz
+*.fq.gz
+*.bam
+*.sam
+*.cram
+
+# --- Large model binaries (optional)
+# If you want models in GitHub Releases instead, ignore them:
+# models/*.pkl
+# models/*.joblib
+
+# --- Keep small example refs if any (explicit allowlist pattern)
+!examples/
+!examples/**
+
+# If you keep a tiny toy FASTA/FASTQ in examples, unignore it explicitly:
+!examples/*.fa
+!examples/*.fasta
+!examples/*.fastq
+!examples/*.fastq.gz
+!examples/*.fq
+!examples/*.fq.gz
+
+
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Data / examples
+examples/*.fastq*
+examples/*.fq*
+examples/hg38/
+
+# Results
+results/
+
+# Zips / archives
+*.zip
+
+# Windows junk
+*:Zone.Identifier
+
+# References / genomes
+refs/
+*.fa
+*.fa.gz
+*.fasta
+*.fasta.gz
+
+# Models (optional, see below)
+models/*.pkl
+models/*.joblib
