@@ -25,3 +25,5 @@ examples/hg38/
 
 # Windows metadata
 *:Zone.Identifier
+*.rartemp
+*.bak*
