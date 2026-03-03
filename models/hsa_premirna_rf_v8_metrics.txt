@@ -1,0 +1,21 @@
+Model Version: v7
+Accuracy: 0.9672
+ROC AUC: 0.9895
+PR AUC (Average Precision): 0.9061
+Brier Score: 0.0233
+Decision Threshold: 0.5000
+
+Confusion Matrix:
+[[825  17]
+ [ 14  89]]
+
+Classification Report:
+              precision    recall  f1-score   support
+
+           0       0.98      0.98      0.98       842
+           1       0.84      0.86      0.85       103
+
+    accuracy                           0.97       945
+   macro avg       0.91      0.92      0.92       945
+weighted avg       0.97      0.97      0.97       945
+

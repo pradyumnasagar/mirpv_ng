@@ -1,0 +1,70 @@
+# ---------- Python ----------
+__pycache__/
+*.py[cod]
+*.pyd
+*.so
+*.egg-info/
+.eggs/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+dist/
+build/
+*.log
+
+# ---------- OS / editor ----------
+.DS_Store
+Thumbs.db
+*~
+*.swp
+*.swo
+.vscode/
+.idea/
+
+# Windows / WSL metadata
+*:Zone.Identifier
+
+# ---------- Docs build ----------
+docs/_build/
+docs/**/.doctrees/
+docs/**/.buildinfo
+
+# ---------- Scratch / generated ----------
+analysis/
+results/
+junk/
+
+# ---------- Archives ----------
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.7z
+
+# ---------- Large data ----------
+refs/
+examples/
+data/train/
+
+# ---------- Bioinformatics large binaries ----------
+*.bam
+*.bai
+*.fastq
+*.fastq.gz
+*.fq
+*.fq.gz
+*.ebwt
+*.fa.gz
+*.fasta.gz
+*.bed
+*.bed.gz
+*.tsv.gz
+
+# ---------- Local / temporary ----------
+.claude/settings.local.json
+full_tree.txt
+size_tree.txt
+large_files.txt
+.claude/launch.json

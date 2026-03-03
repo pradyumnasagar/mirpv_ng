@@ -1,0 +1,4 @@
+bucket	n_samples	max_score	mean_score	median_score	above_q95	above_q99	frac_above_q95	frac_above_q99
+N1	300	0.2313	0.0175	0.0145	3	0	0.0100	0.0000
+N2	300	0.5744	0.0195	0.0147	3	0	0.0100	0.0000
+N3	300	0.8582	0.0424	0.0169	23	5	0.0767	0.0167
