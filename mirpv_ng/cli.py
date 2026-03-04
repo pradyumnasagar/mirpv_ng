@@ -104,11 +104,8 @@ def cmd_score_fasta(args: argparse.Namespace) -> int:
     records = read_fasta(str(fasta_path))
     print(f"[score-fasta] Loaded {len(records)} sequences from {fasta_path}", file=sys.stderr)
 
-    # Output path: parser stores --out-tsv into args.out_tsv
+    # Output path: --out and --out-tsv both write to dest="out_tsv"
     out_val = getattr(args, "out_tsv", None)
-    out_alias = getattr(args, "out", None)
-    if out_alias not in (None, ""):
-        out_val = out_alias
     if out_val is None:
         raise SystemExit("score-fasta: internal error: --out-tsv is missing from parsed args")
 

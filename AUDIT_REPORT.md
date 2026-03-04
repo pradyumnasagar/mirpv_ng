@@ -297,12 +297,12 @@ No versions are pinned (e.g., `numpy>=1.20`, `scikit-learn>=1.1`). Reproducibili
 | BUG-03 | HIGH | Guard `shorter > 0` before overlap division | ✅ Yes |
 | BUG-04 | HIGH | Replace `or`-chain with `is not None` loop for threshold extraction | ✅ Yes |
 | BUG-05 | MEDIUM | Reinstall ViennaRNA in `mirpv-ng` env | ❌ Manual |
-| BUG-06 | MEDIUM | Remove `_find_stem_runs`; import `find_exact_stem_runs` | ❌ Pending |
-| BUG-07 | MEDIUM | Remove dead `starts` variable in `mature_ranker.py` | ❌ Pending |
-| BUG-08 | MEDIUM | Remove dead `cnnc_count` assignment in `pgs_features.py` | ❌ Pending |
-| BUG-09 | LOW | Remove unused imports (ruff auto-fixable) | ❌ Pending |
-| BUG-10 | LOW | Remove dead alias block in `cli.py::cmd_score_fasta` | ❌ Pending |
-| BUG-11 | LOW | Pin versions in `env.yml` and `pyproject.toml` | ❌ Pending |
+| BUG-06 | MEDIUM | Remove `_find_stem_runs`; import `find_exact_stem_runs` | ✅ Yes (already using `find_exact_stem_runs`) |
+| BUG-07 | MEDIUM | Remove dead `starts` variable in `mature_ranker.py` | ✅ Yes (dead variable absent in current code) |
+| BUG-08 | MEDIUM | Remove dead `cnnc_count` assignment in `pgs_features.py` | ✅ Yes (dead assignment absent in current code) |
+| BUG-09 | LOW | Remove unused imports (ruff auto-fixable) | ✅ Yes (unused `Tuple`/`Optional`/`load_rf_model` removed) |
+| BUG-10 | LOW | Remove dead alias block in `cli.py::cmd_score_fasta` | ✅ Yes (alias merge block removed) |
+| BUG-11 | LOW | Pin versions in `env.yml` and `pyproject.toml` | ✅ Yes |
 | BUG-12 | LOW | Accept as training-consistent; document semantics | ❌ Noted |
 
 ---
@@ -425,5 +425,5 @@ EOF
 ## 8. Reproducibility Notes
 
 - **Model versioning**: Models store `feature_cols` and `model_version` keys in the pickle payload. `load_rf_model` validates that runtime feature set matches stored `feature_cols`. Version string is logged at load time.
-- **Unpinned dependencies (BUG-11)**: `scikit-learn`, `numpy`, `xgboost` are specified with minimum versions only. To guarantee exact reproducibility, use a `conda-lock` file or pin exact versions.
-- **RNAfold version**: ViennaRNA 2.7.0 confirmed in package cache. Not pinned in `env.yml` (just `viennarna`). Different ViennaRNA versions can produce different MFE values for edge cases.
+- **Pinned dependencies (BUG-11 fixed)**: `env.yml` now pins all packages to exact minor versions (`numpy=1.26.*`, `scipy=1.13.*`, `scikit-learn=1.5.*`, `xgboost=2.1.*`, etc.). `pyproject.toml` now enforces both lower and upper bounds for model-critical packages (`numpy>=1.24,<2.0`, `scikit-learn>=1.5,<2.0`, `xgboost>=2.0,<3.0`). For exact bit-for-bit reproducibility across build dates, generate a `conda-lock` file: `conda-lock -f env.yml -p linux-64`.
+- **RNAfold version**: ViennaRNA 2.7.0 confirmed and now pinned (`viennarna=2.7.0`) in `env.yml`. Different ViennaRNA versions can produce different MFE values for edge cases.

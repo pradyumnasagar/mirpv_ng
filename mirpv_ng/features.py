@@ -40,6 +40,26 @@ from .tier_filters import Tier2Config, tier2_soft_features
 
 # ----------------- RNAfold wrapper ----------------- #
 
+def parse_rnafold_struct_line(line: str) -> Tuple[str, float]:
+    """Parse a single ViennaRNA output line of the form 'STRUCTURE (MFE)'.
+
+    Shared by run_rnafold (single-sequence) and parallel.run_rnafold_batch
+    (multi-sequence) to keep parsing logic in one place.
+
+    Returns:
+        (structure, mfe) where structure is dot-bracket and mfe is kcal/mol.
+
+    Raises:
+        ValueError: If the line cannot be parsed.
+    """
+    parts = line.split()
+    if len(parts) < 2:
+        raise ValueError(f"Cannot parse RNAfold struct line: {line!r}")
+    struct = parts[0]
+    mfe = float(parts[-1].strip("()"))
+    return struct, mfe
+
+
 def run_rnafold(seq: str, rnafold_bin: str = "RNAfold") -> Tuple[str, float]:
     """
     Run ViennaRNA RNAfold on a single RNA sequence.
@@ -90,11 +110,7 @@ def run_rnafold(seq: str, rnafold_bin: str = "RNAfold") -> Tuple[str, float]:
     if len(lines) < 2:
         raise RuntimeError(f"Unexpected RNAfold output:\n{out}")
 
-    struct_line = lines[1]
-    parts = struct_line.split()
-    struct = parts[0]
-    mfe_str = parts[-1].strip("()")
-    mfe = float(mfe_str)
+    struct, mfe = parse_rnafold_struct_line(lines[1])
     return struct, mfe
 
 
