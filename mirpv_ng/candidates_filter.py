@@ -24,7 +24,7 @@ from __future__ import annotations
 import csv
 import json
 from pathlib import Path
-from typing import Dict, Iterable, List, Optional, Set, Tuple
+from typing import Dict, Iterable, List, Set, Tuple
 
 
 def _read_tsv(path: Path) -> Tuple[List[str], List[Dict[str, str]]]:

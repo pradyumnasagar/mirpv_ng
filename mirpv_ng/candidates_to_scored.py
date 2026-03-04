@@ -25,7 +25,7 @@ import multiprocessing
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Any
+from typing import Dict, List, Optional, Tuple
 
 from .classifier import HairpinClassifier
 from .features import read_fasta
@@ -265,7 +265,7 @@ def run_candidates_to_scored(args: argparse.Namespace) -> int:
     _ensure_rejects_header(rejects_path)
 
     # 1. Read Inputs
-    print(f"[candidates-to-scored] Reading inputs...")
+    print("[candidates-to-scored] Reading inputs...")
     metas = _read_candidates_tsv(candidates_tsv)
     seqs = dict(read_fasta(str(candidates_fa)))
 

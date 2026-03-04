@@ -1,11 +1,8 @@
 import customtkinter as ctk
-import tkinter as tk
 from tkinter import filedialog, messagebox
 import subprocess
 import threading
 import sys
-import os
-from pathlib import Path
 
 # --- Configuration ---
 ctk.set_appearance_mode("Dark")  # Modes: "System" (standard), "Dark", "Light"

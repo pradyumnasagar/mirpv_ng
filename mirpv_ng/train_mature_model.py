@@ -2,7 +2,6 @@
 # Unified Trainer: Trains a single model to rank candidates from BOTH arms.
 
 import argparse
-import pickle
 import re
 import joblib
 from pathlib import Path

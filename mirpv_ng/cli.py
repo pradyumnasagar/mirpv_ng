@@ -280,7 +280,7 @@ def cmd_validate_seqonly(args: argparse.Namespace) -> int:
     """
     from .seqonly_validate import (
         run_stage_a, run_stage_b, compute_verdict,
-        parse_coords_from_header, ValidationResult
+        parse_coords_from_header
     )
     from .features import run_rnafold
     from .classifier import load_rf_model
@@ -313,7 +313,7 @@ def cmd_validate_seqonly(args: argparse.Namespace) -> int:
             mature_model = MatureRanker.load(str(mature_model_path))
         else:
             print(f"[validate-seqonly] WARNING: Mature model not found: {mature_model_path}", file=sys.stderr)
-            print(f"[validate-seqonly] Using heuristic mode for Stage A", file=sys.stderr)
+            print("[validate-seqonly] Using heuristic mode for Stage A", file=sys.stderr)
     
     # Load genome if provided
     genome_seqs = {}

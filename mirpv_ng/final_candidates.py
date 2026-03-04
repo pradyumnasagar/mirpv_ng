@@ -3,7 +3,6 @@
 import csv
 import json
 from pathlib import Path
-from collections import defaultdict
 
 def run_final_candidates(args):
     outdir = Path(args.outdir)

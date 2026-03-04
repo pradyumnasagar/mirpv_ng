@@ -25,7 +25,7 @@ import gzip
 import re
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, Iterable, List, Optional, Tuple, DefaultDict
+from typing import Dict, List, Optional, Tuple, DefaultDict
 from collections import defaultdict
 
 
